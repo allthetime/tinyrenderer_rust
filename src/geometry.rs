@@ -1,13 +1,14 @@
 use std::ops::{Mul, Sub};
-
 use tgaimage::{TGAColor, TGAImage};
 
+// Vec2i represents a 2D vector with integer coordinates
 #[derive(Debug)]
 pub struct Vec2i {
     pub x: i32,
     pub y: i32,
 }
 
+// Vec3f represents a 3D vector with floating-point coordinates
 #[derive(Default, Clone, Copy)]
 pub struct Vec3f {
     pub x: f32,
@@ -16,10 +17,12 @@ pub struct Vec3f {
 }
 
 impl Vec3f {
+    // Constructor for Vec3f
     pub fn new(x: f32, y: f32, z: f32) -> Self {
         Vec3f { x, y, z }
     }
 
+    // Cross product of two 3D vectors
     pub fn cross(&self, other: &Vec3f) -> Vec3f {
         Vec3f {
             x: self.y * other.z - self.z * other.y,
@@ -28,6 +31,7 @@ impl Vec3f {
         }
     }
 
+    // Normalize the vector to have a length of 1
     pub fn normalize(&self) -> Vec3f {
         let len = (self.x * self.x + self.y * self.y + self.z * self.z).sqrt();
         Vec3f {
@@ -38,6 +42,7 @@ impl Vec3f {
     }
 }
 
+// Subtraction of two 3D vectors
 impl Sub for Vec3f {
     type Output = Vec3f;
 
@@ -50,6 +55,7 @@ impl Sub for Vec3f {
     }
 }
 
+// Dot product of two 3D vectors
 impl Mul for Vec3f {
     type Output = f32;
 
@@ -58,7 +64,7 @@ impl Mul for Vec3f {
     }
 }
 
-// Function to draw a line on the image
+// Function to draw a line on the image using Bresenham's algorithm
 pub fn draw_line(
     x0: usize,
     y0: usize,
@@ -111,7 +117,9 @@ pub fn draw_line(
     }
 }
 
+// Function to compute barycentric coordinates
 pub fn barycentric(pts: &[Vec2i; 3], p: &Vec2i) -> Vec3f {
+    // Compute the cross product of two vectors in the triangle plane
     let u = Vec3f::cross(
         &Vec3f {
             x: (pts[2].x - pts[0].x) as f32,
@@ -125,9 +133,7 @@ pub fn barycentric(pts: &[Vec2i; 3], p: &Vec2i) -> Vec3f {
         },
     );
 
-    // `pts` and `p` have integer values as coordinates
-    // so `u.z.abs()` < 1 means `u.z` is 0, that means
-    // the triangle is degenerate, in this case return something with negative coordinates
+    // Check if the triangle is degenerate
     if u.z.abs() < 1.0 {
         return Vec3f {
             x: -1.0,
@@ -142,10 +148,12 @@ pub fn barycentric(pts: &[Vec2i; 3], p: &Vec2i) -> Vec3f {
     }
 }
 
+// Function to draw a filled triangle on the image
 pub fn draw_triangle(pts: &[Vec2i; 3], image: &mut TGAImage, color: TGAColor) {
     let width = image.width() as i32;
     let height = image.height() as i32;
 
+    // Initialize bounding box
     let mut bboxmin = Vec2i {
         x: width - 1,
         y: height - 1,
@@ -156,6 +164,7 @@ pub fn draw_triangle(pts: &[Vec2i; 3], image: &mut TGAImage, color: TGAColor) {
         y: height - 1,
     };
 
+    // Compute the bounding box of the triangle
     for pt in pts {
         bboxmin.x = bboxmin.x.min(pt.x).max(0);
         bboxmin.y = bboxmin.y.min(pt.y).max(0);
@@ -164,6 +173,7 @@ pub fn draw_triangle(pts: &[Vec2i; 3], image: &mut TGAImage, color: TGAColor) {
         bboxmax.y = bboxmax.y.max(pt.y).min(clamp.y);
     }
 
+    // Iterate over the bounding box and draw the triangle
     let mut p = Vec2i { x: 0, y: 0 };
     for x in bboxmin.x..=bboxmax.x {
         for y in bboxmin.y..=bboxmax.y {

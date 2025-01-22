@@ -79,14 +79,19 @@ impl Model {
         }
     }
 
+    // Function to rasterize triangles and draw them on the image
     pub fn triangle_raster(&self, image: &mut TGAImage, color: TGAColor) {
+        // Define the light direction
         let light_direction = Vec3f::new(0.0, 0.0, -1.0);
 
+        // Get the dimensions of the image
         let (width, height) = (image.width(), image.height());
 
+        // Iterate over each face of the model
         for face in &self.faces {
             let mut screen_coords: Vec<geometry::Vec2i> = Vec::new();
             let mut world_coords: Vec<geometry::Vec3f> = Vec::new();
+            // Convert each vertex of the face to screen coordinates and store world coordinates
             for i in 0..3 {
                 let v = &self.verts[face[i as usize] as usize];
                 let x = ((v.x + 1.0) * width as f32 / 2.0) as usize;
@@ -97,11 +102,15 @@ impl Model {
                 });
                 world_coords.push(*v);
             }
+            // Calculate the normal of the face
             let n = (world_coords[2] - world_coords[0])
                 .cross(&(world_coords[1] - world_coords[0]))
                 .normalize();
+            // Calculate the intensity of the light on the face
             let intensity = n * light_direction;
+            // Convert screen coordinates to an array
             let screen_coords: [geometry::Vec2i; 3] = screen_coords.try_into().unwrap();
+            // If the intensity is positive, draw the triangle
             if intensity > 0.0 {
                 geometry::draw_triangle(
                     &screen_coords,
