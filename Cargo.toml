@@ -1,0 +1,7 @@
+[package]
+name = "tinyrender"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tgaimage = "0.1.1"
