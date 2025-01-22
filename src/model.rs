@@ -1,13 +1,11 @@
+use crate::geometry::{self, Vec3f};
+use rand::Rng;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
-
-#[derive(Debug)]
-pub struct Vec3f {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
-}
+use std::thread::sleep;
+use std::time::Duration;
+use tgaimage::{TGAColor, TGAImage};
 
 pub struct Model {
     verts: Vec<Vec3f>,
@@ -63,5 +61,59 @@ impl Model {
     // Return a face by index
     pub fn face(&self, idx: usize) -> &Vec<i32> {
         &self.faces[idx]
+    }
+
+    pub fn draw_model_with_lines(&self, image: &mut TGAImage, color: TGAColor) {
+        let (width, height) = (image.width(), image.height());
+
+        for face in &self.faces {
+            for i in 0..3 {
+                let v0 = &self.verts[face[i as usize] as usize];
+                let v1 = &self.verts[face[((i + 1) % 3) as usize] as usize];
+                let x0 = ((v0.x + 1.0) * width as f32 / 2.0) as usize;
+                let y0 = ((v0.y + 1.0) * height as f32 / 2.0) as usize;
+                let x1 = ((v1.x + 1.0) * width as f32 / 2.0) as usize;
+                let y1 = ((v1.y + 1.0) * height as f32 / 2.0) as usize;
+                geometry::draw_line(x0, y0, x1, y1, image, color);
+            }
+        }
+    }
+
+    pub fn triangle_raster(&self, image: &mut TGAImage, color: TGAColor) {
+        let light_direction = Vec3f::new(0.0, 0.0, -1.0);
+
+        let (width, height) = (image.width(), image.height());
+
+        for face in &self.faces {
+            let mut screen_coords: Vec<geometry::Vec2i> = Vec::new();
+            let mut world_coords: Vec<geometry::Vec3f> = Vec::new();
+            for i in 0..3 {
+                let v = &self.verts[face[i as usize] as usize];
+                let x = ((v.x + 1.0) * width as f32 / 2.0) as usize;
+                let y = ((v.y + 1.0) * height as f32 / 2.0) as usize;
+                screen_coords.push(geometry::Vec2i {
+                    x: x.try_into().unwrap(),
+                    y: y.try_into().unwrap(),
+                });
+                world_coords.push(*v);
+            }
+            let n = (world_coords[2] - world_coords[0])
+                .cross(&(world_coords[1] - world_coords[0]))
+                .normalize();
+            let intensity = n * light_direction;
+            let screen_coords: [geometry::Vec2i; 3] = screen_coords.try_into().unwrap();
+            if intensity > 0.0 {
+                geometry::draw_triangle(
+                    &screen_coords,
+                    image,
+                    TGAColor::rgba(
+                        (intensity * 255.0) as u8,
+                        (intensity * 255.0) as u8,
+                        (intensity * 255.0) as u8,
+                        255,
+                    ),
+                );
+            }
+        }
     }
 }

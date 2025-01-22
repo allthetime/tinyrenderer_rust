@@ -1,15 +1,20 @@
 pub mod geometry;
 pub mod model;
 
-use std::task::ready;
-
+use geometry::Vec2i;
 use tgaimage::{self, TGAColor, TGAImage};
+
+const WIDTH: usize = 800;
+const HEIGHT: usize = 800;
 
 fn main() {
     let white: TGAColor = TGAColor::rgba(255, 255, 255, 255);
-    let red: TGAColor = TGAColor::rgba(255, 0, 0, 255);
-    let mut image: TGAImage = TGAImage::new(100, 100, 4);
-    geometry::draw_line(13, 20, 80, 40, &mut image, white);
-    image.flip_vertically();
-    image.write_tga_file("output.tga", true);
+
+    let model = model::Model::new("./obj/african_head.obj");
+
+    let frame: &mut TGAImage = &mut TGAImage::new(WIDTH as usize, HEIGHT as usize, 4);
+    model.triangle_raster(frame, white);
+
+    frame.flip_vertically();
+    frame.write_tga_file("output.tga", true);
 }
